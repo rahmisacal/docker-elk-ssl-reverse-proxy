@@ -1,0 +1,66 @@
+version: '3'
+
+services:
+
+  elasticsearch:
+    image: rsacal/elk:elasticsearch
+    volumes:
+      - data:/usr/share/elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
+    networks:
+      - elk
+
+  logstash:
+    image: rsacal/elk:logstash
+    ports:
+      - "5000:5000"
+      - "9600:9600"
+    environment:
+      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+
+  kibana:
+    image: rsacal/elk:kibana
+    ports:
+      - "5601:5601"
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+
+  filebeat:
+    image: rsacal/elk:filebeat
+    ports: 
+      - "5044:5044"
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+      
+   nginx:
+     image: nginx:alpine
+     ports:
+       - "80:80"
+       - "443:443"
+     volumes:
+       - ./nginx/config:/etc/nginx/conf.d
+       - ./nginx/certs:/etc/ssl/certs
+
+networks:
+  elk:
+    driver: bridge
+
+volumes:
+  data:
+    driver: local
+    driver_opts:
+      type: 'none'
+      device: '/tmp'
+      o: 'bind'
